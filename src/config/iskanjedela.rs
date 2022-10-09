@@ -1,1 +1,1 @@
-pub static MESTA: &'static [&'static str]  = ["KOPER", "IZOLA", "PORTOROŽ", "STRUNJAN", "PIRAN", "ANKARAN"];
+pub static LOCATIONS: &'static [&'static str]  = &["KOPER", "IZOLA", "PORTOROŽ", "STRUNJAN", "PIRAN", "ANKARAN"];

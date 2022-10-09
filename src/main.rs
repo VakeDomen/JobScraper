@@ -15,6 +15,9 @@ mod helpers;
 mod scrapers;
 mod models;
 mod controllers;
+mod config;
+
+extern crate serde_json;
 
 #[tokio::main]
 async fn main() {
@@ -28,7 +31,15 @@ async fn main() {
     });
     println!("Running telegram bot!");
     // teloxide::commands_repl(bot, answer, Command::ty()).await;
+    // thread::spawn(|| {
+    //     match scrape_iskanjedela() {
+    //         Ok(_) => (),
+    //         Err(_) => ()
+    //     };
+    // });
+    
     teloxide::commands_repl(bot, answer, Command::ty()).await;
+
 }
 
 #[derive(BotCommands, Clone)]
