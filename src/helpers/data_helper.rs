@@ -22,7 +22,7 @@ pub static OBSERVED_LISTINGS_ISKANJEDELA: Lazy<Mutex<Vec<String>>> = Lazy::new(|
 pub fn save_subscribers() {
     let subs = SUBSCRIBERS.lock().unwrap();
     match serde_any::to_file(SUBSCRIBERS_PATH, &*subs) {
-        Ok(_) => {();},
+        Ok(_) => {},
         Err(e) => {println!("Error saving SUBSCRIBERS: {:?}", e);}
     };
 }
@@ -30,7 +30,7 @@ pub fn save_subscribers() {
 pub fn save_observed_listings_iskanjedela() {
     let subs = OBSERVED_LISTINGS_ISKANJEDELA.lock().unwrap();
     match serde_any::to_file(OBSERVED_LISTINGS_ISKANJEDELA_PATH, &*subs) {
-        Ok(_) => {();},
+        Ok(_) => {},
         Err(e) => {println!("Error saving OBSERVED_LISTINGS_ISKANJEDELA: {:?}", e);}
     };
 }
