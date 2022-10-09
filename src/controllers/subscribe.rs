@@ -6,7 +6,7 @@ pub fn subscribe(
     _: &Bot,
     message: Message,
 ) -> String {
-    let mut reposnse_msg = "".to_string();
+    let reposnse_msg;
     let should_save = {
         let mut subs = SUBSCRIBERS.lock().unwrap();
         let changes = if !subs.contains(&message.chat.id.0) {

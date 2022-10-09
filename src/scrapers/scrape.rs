@@ -2,85 +2,51 @@ use std::error::Error;
 
 use reqwest::blocking::Client;
 use scraper::{Selector, ElementRef, Html};
-use teloxide::{prelude::*, Bot};
 
-use crate::{helpers::data_helper::{SUBSCRIBERS, FIRST_SCRAPES_ISKANJEDELA, OBSERVED_LISTINGS_ISKANJEDELA}, models::listing::Sale};
+use crate::{helpers::data_helper::{SUBSCRIBERS, FIRST_SCRAPES_ISKANJEDELA, OBSERVED_LISTINGS_ISKANJEDELA}, models::listing::Listing};
+
+use super::scrape_iskanjedela::scrape_iskanjedela;
 
 
 pub fn scrape() -> Result<(), Box<dyn Error + Send + Sync>> {
-    println!("Scraping!");
-    let subs = SUBSCRIBERS.lock().unwrap();
-    let mut scrapes = FIRST_SCRAPES_ISKANJEDELA.lock().unwrap();
-    // for (subscriber, jobs) in &*subs {
-    //     scrapes.entry(*subscriber).or_insert(Vec::new());
-    //     for job in jobs {            
-    //         println!("[scraper] for: {:?} | {:?}", subscriber, job);
-    //         let sales = scrape_url(job);
-    //         println!("\t-> found: {:?} sales", sales.len());
-    //         let notification_sales = filter_to_notify(subscriber, sales);
-    //         println!("\t-> sales for notification: {:?} sales", notification_sales.len());
-    //         let notify = match scrapes.get_mut(subscriber) {
-    //             Some(v) => {
-    //                 if v.iter().find(|&x| *x == *job) != None {
-    //                     true
-    //                 } else {
-    //                     v.push(job.clone());
-    //                     false
-    //                 }
-    //             },
-    //             None => false
-    //         };
-    //         if !notify {
-    //             continue;
-    //         }
-    //         let sub_id = *subscriber;
-    //         tokio::task::spawn(async move {
-    //             for sale in notification_sales {
-    //                 let location = match sale.sale_location {
-    //                     Some(l) => String::from(l),
-    //                     None => String::from("Unknown location")
-    //                 };
-    //                 let price = match sale.sale_price {
-    //                     Some(l) => String::from(l),
-    //                     None => String::from("Unknown price")
-    //                 };
-    //                 let href = match sale.sale_href {
-    //                     Some(l) => String::from(l),
-    //                     None => String::from("Unknown link")
-    //                 };    
-    //                 let size = match sale.sale_size {
-    //                     Some(l) => String::from(l),
-    //                     None => String::from("Unknown size")
-    //                 };  
-    //                 match Bot::from_env().send_message(
-    //                     teloxide::prelude::ChatId(sub_id),
-    //                     format!("{}:\n\t{}\n\t{}\n{}", location, price, size, href)
-    //                 ).await {
-    //                     Ok(e) => println!("{:?}", e),
-    //                     Err(e) => println!("{:?}", e),
-    //                 };
-    //             }
-    //         });
-    //     }
-    // }
-    let sales = OBSERVED_LISTINGS_ISKANJEDELA.lock().unwrap();
-    match serde_any::to_file("sales.json", &*sales) {
-        Ok(_) => (),
-        Err(e) => println!("Error saving subscirbers: {:?}", e)
-    };
-    match serde_any::to_file("first_scrapes.json", &*scrapes) {
-        Ok(_) => (),
-        Err(e) => println!("Error saving fist scrapes: {:?}", e)
-    };
+        let listings_iskanjedela_reuslt = scrape_iskanjedela();
+        // let sub_id = *subscriber;
+        // tokio::task::spawn(async move {
+        //     for sale in notification_sales {
+        //         let location = match sale.sale_location {
+        //             Some(l) => String::from(l),
+        //             None => String::from("Unknown location")
+        //         };
+        //         let price = match sale.sale_price {
+        //             Some(l) => String::from(l),
+        //             None => String::from("Unknown price")
+        //         };
+        //         let href = match sale.sale_href {
+        //             Some(l) => String::from(l),
+        //             None => String::from("Unknown link")
+        //         };    
+        //         let size = match sale.sale_size {
+        //             Some(l) => String::from(l),
+        //             None => String::from("Unknown size")
+        //         };  
+        //         match Bot::from_env().send_message(
+        //             teloxide::prelude::ChatId(sub_id),
+        //             format!("{}:\n\t{}\n\t{}\n{}", location, price, size, href)
+        //         ).await {
+        //             Ok(e) => println!("{:?}", e),
+        //             Err(e) => println!("{:?}", e),
+        //         };
+        //     }
+        // });    
     Ok(())
 }
 
 
-fn filter_to_notify(subscriber: &i64, sales: Vec<Sale>) -> Vec<Sale> {
-    let mut sales_to_notify: Vec<Sale> = Vec::new();
+fn filter_to_notify(subscriber: &i64, sales: Vec<Listing>) -> Vec<Listing> {
+    let mut sales_to_notify: Vec<Listing> = Vec::new();
     let mut seen = OBSERVED_LISTINGS_ISKANJEDELA.lock().unwrap();
     let sales_ids: Vec<String> = sales.iter().map(|sale| {
-        match &sale.sale_id {
+        match &sale.listing_id {
             Some(id) => String::from(id),
             None => String::from("missing")
         }
@@ -89,7 +55,7 @@ fn filter_to_notify(subscriber: &i64, sales: Vec<Sale>) -> Vec<Sale> {
         Some(seen_by_sub) => {
             println!("\t\t-> Some sales have beed seen before. Checking for new ones.");
             for sale in sales {
-                let sale_id = match &sale.sale_id {
+                let sale_id = match &sale.listing_id {
                     Some(id) => String::from(id),
                     None => String::from("missing")
                 };
@@ -108,7 +74,7 @@ fn filter_to_notify(subscriber: &i64, sales: Vec<Sale>) -> Vec<Sale> {
 }
 
 
-fn scrape_url(url: &str) -> Vec<Sale> {
+fn scrape_url(url: &str) -> Vec<Listing> {
     let mut next_page = true;
     let mut next_page_to_scrape = String::from(url);
     let mut sales = Vec::new();
@@ -117,17 +83,16 @@ fn scrape_url(url: &str) -> Vec<Sale> {
             Ok(html) => {
                 let selector = Selector::parse(r#"div[itemprop="item"]"#).unwrap();
                 for sale in html.select(&selector) {
-                    let sale_id = get_id(sale);
-                    let sale_location = get_location(sale);
-                    let sale_price = get_price(sale);
-                    let sale_href = get_href(sale);
-                    let sale_size = get_size(sale);
-                    sales.push(Sale{ 
-                        sale_id,
-                        sale_location, 
-                        sale_price, 
-                        sale_href,
-                        sale_size,
+                    let listing_id = get_id(sale);
+                    let listing_location = get_location(sale);
+                    let listing_href = get_href(sale);
+                    let listing_price = get_price(sale);
+                    let listing_title = get_size(sale);
+                    sales.push(Listing{ 
+                        listing_id,
+                        listing_location,
+                        listing_title, 
+                        listing_href, 
                     });
                 }
                 // is there a next page?

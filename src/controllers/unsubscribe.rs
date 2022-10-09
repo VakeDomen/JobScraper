@@ -6,7 +6,7 @@ pub fn unsubscribe(
     _: &Bot,
     message: Message
 ) -> String {
-    let mut reposnse_msg = "".to_string();
+    let reposnse_msg;
     let should_save = {
         let mut subs = SUBSCRIBERS.lock().unwrap();
         let index_option = subs.iter().position(|&r| r == message.chat.id.0);
