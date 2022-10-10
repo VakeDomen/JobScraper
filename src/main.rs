@@ -11,6 +11,8 @@ use std::thread;
 use std::env;
 use dotenv::dotenv;
 
+use crate::scrapers::scrape_iskanjedela::scrape_iskanjedela;
+
 mod helpers;
 mod scrapers;
 mod models;
@@ -30,16 +32,7 @@ async fn main() {
         run_cron();
     });
     println!("Running telegram bot!");
-    // teloxide::commands_repl(bot, answer, Command::ty()).await;
-    // thread::spawn(|| {
-    //     match scrape_iskanjedela() {
-    //         Ok(_) => (),
-    //         Err(_) => ()
-    //     };
-    // });
-    
     teloxide::commands_repl(bot, answer, Command::ty()).await;
-
 }
 
 #[derive(BotCommands, Clone)]

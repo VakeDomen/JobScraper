@@ -13,7 +13,7 @@ pub fn scrape_iskanjedela() -> Result<Vec<Listing>, Error> {
 fn filter_previously_seen_listings(listings: Vec<Listing>) -> Vec<Listing> {
     let filtered_listings = {
         let mut all_listings = OBSERVED_LISTINGS_ISKANJEDELA.lock().unwrap();
-        let report_to_user = all_listings.is_empty();
+        let report_to_user = !all_listings.is_empty();
         let mut to_report = vec![];
         for listing in listings.into_iter() {
             if !all_listings.contains(&listing.listing_id) {
@@ -52,7 +52,7 @@ fn fetch_raw_data() -> Vec<Response> {
     let mut responses = vec![];
     for location in LOCATIONS {
         println!("[ISKANJE DELA] fetching data for location: {}", location);
-        let target_uri = format!("https://www.iskanjedela.si/api/jobs?limit=200&location={}&facets=RECENCY==3DAYSAGO", location);
+        let target_uri = format!("https://www.iskanjedela.si/api/jobs?limit=200&location={}&facets=RECENCY==TODAY", location);
         let resp_option = match reqwest::blocking::get(target_uri) {
             Ok(data) => Some(data),
             Err(e) =>  {
